@@ -2,16 +2,16 @@ import { create } from 'zustand'
 import { Theme } from '../types'
 
 const defaultTheme: Theme = {
-  name: 'Rose',
-  primary: '#E8A0B4',
-  secondary: '#A8C5E0',
-  accent: '#E8D48B',
-  background: '#F8F4F0',
-  surface: '#FFFFFF',
-  surfaceAlt: '#F5EDEA',
-  text: '#2D2522',
-  textSecondary: '#8F7D77',
-  border: '#E0D4CE',
+  name: 'Pandora',
+  primary: '#6AA8C0',
+  secondary: '#4A9880',
+  accent: '#B49878',
+  background: '#1A2226',
+  surface: '#242E32',
+  surfaceAlt: '#2E3A40',
+  text: '#D8E4E8',
+  textSecondary: '#889AA0',
+  border: '#3A4A50',
   fontFamily: 'Inter, system-ui, sans-serif',
   borderRadius: 16,
   compact: true,
@@ -23,7 +23,8 @@ const defaultTheme: Theme = {
 
 interface ThemeState {
   theme: Theme
-  availableThemes: { name: string; theme: Partial<Theme> }[]
+  mascot: string
+  availableThemes: { name: string; icon: string; mascot: string; theme: Partial<Theme> }[]
   isThemeEditorOpen: boolean
   loadTheme: () => Promise<void>
   setTheme: (theme: Theme) => void
@@ -33,66 +34,70 @@ interface ThemeState {
   applyPreset: (name: string) => void
 }
 
-const presets: { name: string; theme: Partial<Theme> }[] = [
+const presets: { name: string; icon: string; mascot: string; theme: Partial<Theme> }[] = [
   {
-    name: 'Rose',
+    name: 'Pandora', icon: '🌊', mascot: 'whale',
     theme: {
-      primary: '#E8A0B4', secondary: '#A8C5E0', accent: '#E8D48B',
-      background: '#F8F4F0', surface: '#FFFFFF', surfaceAlt: '#F5EDEA',
-      text: '#2D2522', textSecondary: '#8F7D77', border: '#E0D4CE',
+      primary: '#6AA8C0', secondary: '#4A9880', accent: '#B49878',
+      background: '#1A2226', surface: '#242E32', surfaceAlt: '#2E3A40',
+      text: '#D8E4E8', textSecondary: '#889AA0', border: '#3A4A50',
     }
   },
   {
-    name: 'Mist',
+    name: 'Hutan', icon: '🌿', mascot: 'fox',
     theme: {
-      primary: '#94A3B8', secondary: '#7EACB8', accent: '#B8C5A0',
-      background: '#F0F2F5', surface: '#FFFFFF', surfaceAlt: '#E8ECF0',
-      text: '#1E293B', textSecondary: '#64748B', border: '#CBD5E1',
+      primary: '#C49850', secondary: '#7A9A60', accent: '#B06840',
+      background: '#1E1E18', surface: '#282820', surfaceAlt: '#323228',
+      text: '#E0DCD0', textSecondary: '#8A8070', border: '#3A3830',
     }
   },
   {
-    name: 'Dusk',
+    name: 'Senja', icon: '🌅', mascot: 'owl',
     theme: {
-      primary: '#A78BBA', secondary: '#7A9EC7', accent: '#C9A87C',
-      background: '#1A1625', surface: '#252036', surfaceAlt: '#302A44',
-      text: '#E8E4F0', textSecondary: '#9A92B0', border: '#3D3555',
+      primary: '#A07858', secondary: '#9880B0', accent: '#C49060',
+      background: '#1E1A1A', surface: '#2A2424', surfaceAlt: '#342E2E',
+      text: '#E0D8D4', textSecondary: '#8A7A78', border: '#3C3636',
     }
   },
   {
-    name: 'Moss',
+    name: 'Magma', icon: '🌋', mascot: 'dragon',
     theme: {
-      primary: '#8FA88A', secondary: '#97B2A8', accent: '#C8B88A',
-      background: '#F4F6F0', surface: '#FFFFFF', surfaceAlt: '#EDF0E8',
-      text: '#1C2820', textSecondary: '#6A7A6E', border: '#D0D8C8',
+      primary: '#C07050', secondary: '#A05030', accent: '#D09030',
+      background: '#1E1410', surface: '#2A1E18', surfaceAlt: '#362822',
+      text: '#E0D0C8', textSecondary: '#8A7060', border: '#3C2E28',
     }
   },
   {
-    name: 'Coffee',
+    name: 'Malam', icon: '🌙', mascot: 'cat',
     theme: {
-      primary: '#C4956A', secondary: '#A8B8C0', accent: '#D4A88A',
-      background: '#F5F0EA', surface: '#FFFFFF', surfaceAlt: '#EDE5DC',
-      text: '#2C2218', textSecondary: '#8A7A6A', border: '#D8CEC4',
+      primary: '#7880A0', secondary: '#606898', accent: '#B8A070',
+      background: '#14141E', surface: '#1E1E2A', surfaceAlt: '#282836',
+      text: '#D0D0E0', textSecondary: '#787890', border: '#343448',
     }
   },
   {
-    name: 'Night',
+    name: 'Sungai', icon: '🌴', mascot: 'frog',
     theme: {
-      primary: '#8A9EC8', secondary: '#7A8DA0', accent: '#C8A8A0',
-      background: '#0F0F18', surface: '#1A1A28', surfaceAlt: '#242438',
-      text: '#E0E4EC', textSecondary: '#888CA0', border: '#32324A',
+      primary: '#6AA070', secondary: '#7A9A80', accent: '#90A860',
+      background: '#161E18', surface: '#1E2820', surfaceAlt: '#283228',
+      text: '#D0E0D0', textSecondary: '#788A78', border: '#303E34',
     }
   },
 ]
 
 export const useThemeStore = create<ThemeState>((set, get) => ({
   theme: defaultTheme,
+  mascot: 'whale',
   availableThemes: presets,
   isThemeEditorOpen: false,
 
   loadTheme: async () => {
     try {
       const saved = await window.electronAPI?.getTheme()
-      if (saved) set({ theme: { ...defaultTheme, ...saved } })
+      if (saved) {
+        const preset = presets.find(p => p.name === saved.name)
+        set({ theme: { ...defaultTheme, ...saved }, mascot: preset?.mascot || 'whale' })
+      }
     } catch (e) { console.warn('Could not load theme', e) }
   },
 
@@ -108,7 +113,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   },
 
   resetTheme: () => {
-    set({ theme: defaultTheme })
+    set({ theme: defaultTheme, mascot: 'whale' })
     window.electronAPI?.setTheme(defaultTheme)
   },
 
@@ -118,7 +123,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     const preset = presets.find(p => p.name === name)
     if (preset) {
       const updated = { ...get().theme, ...preset.theme, name }
-      set({ theme: updated })
+      set({ theme: updated, mascot: preset.mascot })
       window.electronAPI?.setTheme(updated)
     }
   },

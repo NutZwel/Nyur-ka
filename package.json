@@ -1,6 +1,6 @@
 {
   "name": "nyurka",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Compact Spotify music player with overlay mode",
   "author": "NutZwel",
   "main": "dist-electron/main.js",

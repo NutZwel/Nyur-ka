@@ -145,6 +145,12 @@ export function useAudioPlayer() {
     if (audioRef.current) { audioRef.current.currentTime = t; setProgress(t) }
   }, [setProgress])
 
+  // Expose seek globally so PlayerView can use it
+  useEffect(() => {
+    (window as any).__seekAudio = seek
+    return () => { delete (window as any).__seekAudio }
+  }, [seek])
+
   const stop = useCallback(() => {
     audioRef.current?.pause()
     audioRef.current!.src = ''

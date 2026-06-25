@@ -7,7 +7,7 @@ import { useThemeStore } from '../store/themeStore'
 import { usePlayerStore } from '../store/playerStore'
 import { useAppStore } from '../store/appStore'
 import DancingRobot from './DancingRobot'
-import PixelWhale from './PixelWhale'
+import PixelMascot from './PixelMascot'
 
 export default function PlayerView() {
   const { theme } = useThemeStore()
@@ -105,29 +105,30 @@ export default function PlayerView() {
             </div>
           </div>
 
-          {/* Progress */}
+          {/* Simple range slider untuk seek */}
           <div className="w-full max-w-[280px] flex items-center gap-2">
             <span className="text-xs tabular-nums font-mono" style={{ color: theme.textSecondary, minWidth: 32 }}>
               {fmt(progress)}
             </span>
-            <div className="flex-1 relative h-2 rounded-full overflow-hidden" style={{ background: theme.surfaceAlt }}>
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${progressPct}%`,
-                  background: `linear-gradient(90deg, ${theme.primary}, ${theme.secondary})`,
-                  boxShadow: `0 0 8px ${theme.primary}60`,
-                }}
-              />
-              <input
-                type="range"
-                min={0}
-                max={duration || 100}
-                value={progress}
-                onChange={(e) => setProgress(parseFloat(e.target.value))}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-            </div>
+            <input
+              type="range"
+              min={0}
+              max={duration || 1}
+              step={0.1}
+              value={progress}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value)
+                ;(window as any).__seekAudio?.(val)
+              }}
+              className="flex-1"
+              style={{
+                height: 4,
+                borderRadius: 4,
+                background: `linear-gradient(90deg, ${theme.primary} 0%, ${theme.primary} ${progressPct}%, ${theme.surfaceAlt} ${progressPct}%, ${theme.surfaceAlt} 100%)`,
+                outline: 'none',
+                cursor: 'pointer',
+              }}
+            />
             <span className="text-xs tabular-nums font-mono" style={{ color: theme.textSecondary, minWidth: 32 }}>
               {fmt(duration)}
             </span>
@@ -194,7 +195,7 @@ export default function PlayerView() {
               boxShadow: `0 0 40px ${theme.primary}20, inset 0 0 40px ${theme.secondary}10`,
             }}
           >
-            <PixelWhale size={120} />
+            <PixelMascot type={useThemeStore.getState().mascot || 'whale'} size={120} />
           </div>
           <div className="text-center">
             <div className="text-xl font-bold" style={{ color: theme.text }}>

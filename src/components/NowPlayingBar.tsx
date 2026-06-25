@@ -31,10 +31,20 @@ export default function NowPlayingBar() {
         </div>
       </div>
 
-      {/* Progress */}
+      {/* Progress — Click/Drag to seek */}
       <div className="flex-1 hidden md:flex items-center gap-2">
-        <div className="flex-1 relative h-1.5 rounded-full overflow-hidden" style={{ background: theme.surfaceAlt }}>
-          <div className="h-full rounded-full transition-all" style={{ width: `${progressPct}%`, background: theme.primary, boxShadow: `0 0 6px ${theme.primary}60` }} />
+        <div className="flex-1 relative h-2 rounded-full flex items-center cursor-pointer group" style={{ background: theme.surfaceAlt }}
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            const pct = (e.clientX - rect.left) / rect.width
+            const target = pct * duration
+            const audio = document.querySelector('audio')
+            if (audio) audio.currentTime = target
+            setProgress(target)
+          }}>
+          <div className="rounded-full transition-all" style={{ width: `${progressPct}%`, height: 4, background: theme.primary, boxShadow: `0 0 6px ${theme.primary}60` }} />
+          <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-grab"
+            style={{ left: `calc(${progressPct}% - 6px)`, background: theme.primary, boxShadow: `0 0 6px ${theme.primary}80` }} />
         </div>
         <span className="text-[10px] tabular-nums font-mono" style={{ color: theme.textSecondary }}>{fmt(progress)}</span>
       </div>
