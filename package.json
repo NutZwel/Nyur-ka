@@ -1,0 +1,48 @@
+{
+  "name": "sonic-overlay",
+  "version": "1.0.0",
+  "description": "Compact Spotify music player with overlay mode",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder",
+    "preview": "vite preview",
+    "fix-html": "node fix-html.js",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron . --no-sandbox\"",
+    "start": "vite build && node fix-html.js && electron . --no-sandbox",
+    "electron:build": "vite build && electron-builder"
+  },
+  "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
+    "electron-store": "^8.1.0",
+    "howler": "^2.2.4",
+    "lucide-react": "^0.379.0",
+    "play-dl": "^1.9.7",
+    "re-resizable": "^6.9.17",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^6.26.0",
+    "react-window": "^1.8.10",
+    "ytdl-core": "^4.11.5",
+    "zustand": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.11",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/react-window": "^1.8.8",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "concurrently": "^8.2.2",
+    "electron": "^42.5.0",
+    "electron-builder": "^24.13.3",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.2",
+    "vite": "^5.3.1",
+    "vite-plugin-electron": "^0.28.7",
+    "vite-plugin-electron-renderer": "^0.14.5",
+    "wait-on": "^7.2.0"
+  }
+}
