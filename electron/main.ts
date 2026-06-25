@@ -53,7 +53,7 @@ process.on('unhandledRejection', (error) => {
 function createMainWindow() {
   const bounds = store.get('windowBounds')
 
-  const iconPath = join(__dirname, '../image.png')
+  const iconPath = join(__dirname, '../image.ico')
 
   mainWindow = new BrowserWindow({
     width: bounds.width || 400,
@@ -109,7 +109,7 @@ function createMainWindow() {
 }
 
 function createTray() {
-  const iconPath = join(__dirname, '../image.png')
+  const iconPath = join(__dirname, '../image.ico')
   let trayIcon: nativeImage
   try {
     trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })

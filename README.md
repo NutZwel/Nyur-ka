@@ -1,37 +1,39 @@
-# Sonic Overlay 🎵
+# Nyu'rka 🐋🎵
 
-Aplikasi desktop **music player** compact dengan integrasi **Spotify** dan **YouTube**, fitur **overlay mode** (floating di atas aplikasi lain), dan **kustomisasi tema** yang detail.
+Aplikasi desktop **music player** compact dengan integrasi **Spotify** dan **YouTube**, kustomisasi **tema pastel**, dan **paus pixel** yang lucu 🐋
 
 ## ✨ Fitur
 
-- 🎵 **Pemutar Musik** — Putar lagu dari YouTube dengan kualitas audio tinggi
-- 🔍 **Search** — Cari lagu dari YouTube dan Spotify secara real-time
-- 📋 **Queue Management** — Atur antrian lagu, shuffle, loop
-- 🎨 **Theme Customization** — Kustom penuh:
-  - 6 tema preset (Ocean, Midnight, Sunset, Forest, Cherry, Cyberpunk)
+- 🎵 **Pemutar Musik** — Putar lagu dari YouTube dengan streaming audio
+- 🔍 **Search** — Cari lagu dari YouTube dan Spotify
+- 📋 **Import Playlist** — Paste link YouTube / Spotify playlist
+- 📋 **Queue Management** — Atur antrian, shuffle, loop
+- 🔄 **Auto-Next & Auto-Recommend** — Putar lagu serupa saat queue habis
+- 🎨 **Theme Customization** — 6 tema pastel (Rose, Mist, Dusk, Moss, Coffee, Night)
   - Custom color picker untuk setiap elemen
   - Border radius, spacing, font
   - Blur effect & animasi toggle
-- 🪟 **Overlay Mode** — Window kecil compact yang selalu di atas (always-on-top)
-- 🎚 **Equalizer Visual** — Animasi equalizer real-time
-- 🎯 **Minimal & Interaktif** — UI ringan dengan animasi smooth
+- 🐋 **Pixel Whale Mascot** — Animasi paus pixel di layar utama
+- 🤖 **Dancing Robot** — Robot pixel dance pas gak ada lagu
+- 💾 **Playback Persistence** — Queue & lagu terakhir tersimpan
+- 🎯 **Compact & Interaktif** — UI ringan dengan animasi smooth
 
 ## 🚀 Cara Install & Run
 
 ### 1. Clone & Install Dependencies
 
 ```bash
-git clone <repo-url>
-cd sonic-overlay
+git clone https://github.com/NutZwel/Nyur-ka.git
+cd Nyur-ka
 npm install
 ```
 
-### 2. Setup Spotify (Optional — untuk search playlist & album)
+### 2. Setup Spotify (Opsional — untuk search playlist & album)
 
 Buat aplikasi di [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/):
 
 1. Login ke Spotify Developer
-2. Create App → masukkan nama `Sonic Overlay`
+2. Create App → masukkan nama `Nyurka`
 3. Add Redirect URI: `http://localhost:8888/callback`
 4. Save
 5. Copy **Client ID** dan **Client Secret**
@@ -43,32 +45,30 @@ const SPOTIFY_CLIENT_ID = 'YOUR_CLIENT_ID'
 const SPOTIFY_CLIENT_SECRET = 'YOUR_CLIENT_SECRET'
 ```
 
-### 3. Jalankan Development Mode
+Atau tempel token langsung di **Settings → Manual Token**.
+
+### 3. Jalankan
 
 ```bash
-npm run electron:dev
+npm start
 ```
 
-### 4. Build untuk Production
-
-```bash
-npm run electron:build
-```
+Atau **double klik Nyurka.lnk** di desktop (shortcut + icon sudah include).
 
 ## 🎮 Cara Pakai
 
 | Tombol | Fungsi |
 |--------|--------|
-| 🔍 **Search** | Cari lagu (YouTube otomatis + Spotify) |
+| 🔍 **Search** | Cari lagu + paste link playlist YouTube/Spotify |
 | ▶️ **Play** | Putar lagu dari hasil pencarian |
 | 📋 **Queue** | Lihat & atur antrian lagu |
 | 🎨 **Theme** | Kustom tampilan aplikasi |
-| ⚙️ **Settings** | Login Spotify, overlay, opacity, always-on-top |
-| ◈ **Overlay** | Mode floating window compact |
+| ⚙️ **Settings** | Spotify token, always-on-top, compact view |
 
-### Overlay Mode
-
-Klik tombol **Overlay** di title bar untuk mengaktifkan mode overlay. Window kecil akan muncul di pojok kanan bawah layar. Kamu bisa drag window tersebut ke posisi manapun.
+### Import Playlist
+1. Klik icon **📋** di sebelah search bar
+2. Paste link **YouTube playlist** atau **Spotify playlist**
+3. Klik **Add** — semua lagu masuk queue!
 
 ## 🧩 Struktur Project
 
@@ -76,28 +76,26 @@ Klik tombol **Overlay** di title bar untuk mengaktifkan mode overlay. Window kec
 src/
 ├── components/
 │   ├── PlayerView.tsx      # Halaman utama pemutar
-│   ├── SearchView.tsx      # Pencarian lagu
+│   ├── SearchView.tsx      # Pencarian + playlist import
 │   ├── QueueView.tsx       # Antrian lagu
 │   ├── SettingsView.tsx    # Pengaturan
 │   ├── ThemeEditor.tsx     # Editor tema
 │   ├── NowPlayingBar.tsx   # Bottom bar mini player
 │   ├── TitleBar.tsx        # Custom title bar
-│   └── Sidebar.tsx         # Navigasi sidebar
-├── store/
-│   ├── playerStore.ts      # State player
-│   ├── themeStore.ts       # State tema
-│   └── appStore.ts         # State aplikasi
-├── hooks/
-│   └── useAudioPlayer.ts   # Audio playback hook
-├── types/
-│   └── index.ts            # Type definitions
-├── App.tsx                 # Root component
-└── OverlayApp.tsx          # Overlay window component
+│   ├── Sidebar.tsx         # Navigasi sidebar
+│   ├── PixelWhale.tsx      # Animasi paus 🐋
+│   └── DancingRobot.tsx    # Robot dance 🤖
+├── store/                  # State management (Zustand)
+├── hooks/                  # Audio playback hook
+├── types/                  # Type definitions
+└── App.tsx                 # Root component
+
 electron/
 ├── main.ts                 # Electron main process
-├── preload.ts              # Preload / context bridge
-├── spotify.ts              # Spotify API integration
-└── youtube.ts              # YouTube search integration
+├── preload.ts              # Context bridge
+├── spotify.ts              # Spotify API
+├── youtube.ts              # YouTube streaming
+└── playlist.ts             # Playlist extractor
 ```
 
 ## ⚙️ Teknologi
@@ -107,29 +105,30 @@ electron/
 - **Zustand** — State management
 - **Tailwind CSS** — Styling
 - **Vite** — Build tool
-- **play-dl** — YouTube search & streaming
+- **yt-dlp** — YouTube audio streaming
+- **play-dl** — YouTube search
 - **Spotify Web API** — Metadata & playlists
 - **Lucide React** — Icons
 
-## 🎨 Theme Customization
+## 🎨 Theme Presets
 
-Di halaman **Theme**, kamu bisa:
-
-1. Pilih **preset** (6 tema bawaan)
-2. Custom **warna** per-elemen dengan color picker
-3. Atur **border radius** (0-24px)
-4. Atur **spacing** (0-12px)
-5. Pilih **font family** 
-6. Toggle **blur effect** + atur intensity
-7. Toggle **animations**
-8. Lihat **preview** langsung
+| Theme | Style |
+|-------|-------|
+| 🌸 **Rose** | Pink pastel, soft & warm |
+| 🌫️ **Mist** | Gray kalem, profesional |
+| 🌙 **Dusk** | Dark ungu, cozy |
+| 🌿 **Moss** | Hijau earthy, natural |
+| ☕ **Coffee** | Coklat hangat |
+| 🌃 **Night** | Dark biru, minimalis |
 
 ## 📝 Catatan
 
-- Audio streaming menggunakan YouTube sebagai sumber (seperti bot Discord pada umumnya)
-- Login Spotify bersifat opsional, berguna untuk search playlist/album
+- Audio streaming menggunakan **yt-dlp** sebagai sumber (YouTube)
+- Login Spotify bersifat opsional
+- Playlist Spotify butuh token (Settings → Manual Token)
+- **Playlist YouTube 100% work** tanpa login
 - Aplikasi ini untuk penggunaan pribadi
 
 ---
 
-Made with ❤️
+🐋 Made with love

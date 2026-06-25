@@ -1,5 +1,5 @@
 {
-  "name": "sonic-overlay",
+  "name": "nyurka",
   "version": "1.0.0",
   "description": "Compact Spotify music player with overlay mode",
   "main": "dist-electron/main.js",
