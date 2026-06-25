@@ -37,6 +37,13 @@ interface PlayerState {
   loadPlayback: () => Promise<boolean>
 }
 
+// Preload a track in background
+async function preloadTrack(track: Track) {
+  if (!track.youtubeUrl && !track.youtubeId) return
+  const url = track.youtubeUrl || `https://youtube.com/watch?v=${track.youtubeId}`
+  try { await window.electronAPI?.youtubePreload?.(url) } catch {}
+}
+
 // Extract YouTube playlist ID or video IDs from URL
 function parsePlaylistUrl(url: string): { list?: string; videoId?: string } {
   try {
@@ -74,6 +81,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   setTrack: (track: Track) => {
     set({ currentTrack: track, progress: 0, duration: track.duration || 0 })
+    preloadTrack(track)
   },
 
   togglePlay: () => {
@@ -94,6 +102,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       }
       return { queue: [...state.queue, item] }
     })
+    // Preload this track
+    preloadTrack(track)
   },
 
   removeFromQueue: (index: number) => {
@@ -148,6 +158,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set({ queueIndex: nextIndex })
     const next = get().queue[nextIndex]
     if (next) set({ currentTrack: next.track, progress: 0 })
+    // Preload track after this one
+    const queue = get().queue
+    const nextIdx = get().queueIndex
+    if (queue[nextIdx + 1]) preloadTrack(queue[nextIdx + 1].track)
     return next?.track || null
   },
 

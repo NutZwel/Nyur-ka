@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   youtubeSearch: (query: string) => ipcRenderer.invoke('youtube-search', query),
   youtubeGetStream: (url: string) => ipcRenderer.invoke('youtube-get-stream', url),
   youtubeStopStream: () => ipcRenderer.invoke('youtube-stop-stream'),
+  youtubePreload: (url: string) => ipcRenderer.invoke('youtube-preload', url),
 
   // Playlist
   playlistExtract: (url: string) => ipcRenderer.invoke('playlist-extract', url),
