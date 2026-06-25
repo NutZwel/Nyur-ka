@@ -2,15 +2,58 @@
   "name": "nyurka",
   "version": "1.0.0",
   "description": "Compact Spotify music player with overlay mode",
+  "author": "NutZwel",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && electron-builder",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "fix-html": "node fix-html.js",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron . --no-sandbox\"",
     "start": "vite build && node fix-html.js && electron . --no-sandbox",
-    "electron:build": "vite build && electron-builder"
+    "dist": "vite build && node fix-html.js && electron-builder --win portable",
+    "dist:installer": "vite build && node fix-html.js && electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.nyurka.app",
+    "productName": "Nyurka",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "image.ico",
+      "image.png",
+      "fix-html.js"
+    ],
+    "extraResources": [
+      {
+        "from": "start-nyurka-quick.bat",
+        "to": "start-nyurka-quick.bat"
+      }
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "icon": "image.ico"
+    },
+    "portable": {
+      "artifactName": "Nyurka-${version}-portable.exe"
+    },
+    "nsis": {
+      "artifactName": "Nyurka-${version}-setup.exe",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "win": {
+      "signDlls": false,
+      "signAndEditExecutable": false,
+      "certificateSubjectName": null,
+      "certificateSha1": null
+    }
   },
   "dependencies": {
     "@distube/ytdl-core": "^4.16.12",
