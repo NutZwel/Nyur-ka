@@ -22,6 +22,7 @@ interface ElectronAPI {
   youtubeGetStream: (url: string) => Promise<any>
   youtubeStopStream: () => Promise<boolean>
   youtubePreload: (url: string) => Promise<boolean>
+  ytDlpStatus: () => Promise<{ available: boolean; path: string }>
   playlistExtract: (url: string) => Promise<{ tracks?: any[]; error?: string }>
   storeGet: (key: string) => Promise<any>
   storeSet: (key: string, value: any) => Promise<boolean>
