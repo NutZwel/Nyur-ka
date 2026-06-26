@@ -95,10 +95,11 @@ export function useAudioPlayer() {
         }
 
         if (result.duration) setDuration(result.duration)
+        audio.preload = 'auto'
         audio.src = result.streamUrl
 
         const onCanPlay = () => {
-          if (usePlayerStore.getState().isPlaying) {
+          if (usePlayerStore.getState().isPlaying && audio.paused) {
             audio.play().catch(() => {})
           }
         }
@@ -135,8 +136,9 @@ export function useAudioPlayer() {
           audio.removeEventListener('error', onError)
         }
 
+        // Tunggu bisa play dulu
         try {
-          await audio.play()
+          audio.play()
           setPlaying(true)
         } catch {
           setPlaying(false)

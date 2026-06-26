@@ -268,68 +268,54 @@ export function registerYoutubeIPCs() {
     try {
       if (!ytAvailable) return { error: 'yt-dlp not available' }
       killStream()
+
       const videoId = extractId(videoUrl)
       const idKey = videoId || `stream_${Date.now()}`
 
-      // Cek cache dulu
+      // Cek cache file dulu
       if (streamCache.has(idKey)) {
         const cached = streamCache.get(idKey)!
-        console.log('[yt-dlp] Cache hit:', idKey)
         const port = await serveFromFile(cached.filePath, cached.size, cached.contentType)
         return { streamUrl: `http://127.0.0.1:${port}/`, duration: 0, title: '', videoId: idKey }
       }
 
-      // Jika sedang didownload (dari preload), tunggu sampai selesai
+      // Jika sedang didownload (dari preload), tunggu
       if (downloading.has(idKey)) {
-        console.log('[yt-dlp] Waiting for preload:', idKey)
         for (let i = 0; i < 60; i++) {
           await new Promise(r => setTimeout(r, 500))
           if (streamCache.has(idKey)) {
             const cached = streamCache.get(idKey)!
-            console.log('[yt-dlp] Preload finished, serving:', idKey)
             const port = await serveFromFile(cached.filePath, cached.size, cached.contentType)
             return { streamUrl: `http://127.0.0.1:${port}/`, duration: 0, title: '', videoId: idKey }
           }
-          if (!downloading.has(idKey)) break // dibatalkan
+          if (!downloading.has(idKey)) break
         }
-        // Fallthrough: download langsung
       }
 
+      // ⚡ PAKAI DIRECT STREAM URL — gak perlu download ke disk, 10x lebih cepet
       downloading.add(idKey)
-
       try {
-        // Ambil metadata via spawn async
+        const [cmd, ...args] = ytSpawnArgs(['-f', 'bestaudio[ext=m4a]/bestaudio', '--get-url', '--no-warnings', videoUrl])
+        const streamUrl = await spawnOutput(cmd, args, 15000)
+        const url = streamUrl.trim()
+
+        if (!url.startsWith('http')) {
+          downloading.delete(idKey)
+          return { error: 'Invalid stream URL' }
+        }
+
+        // Metadata
         let title = 'Unknown', duration = 0
         try {
-          const [cmd, ...args] = ytSpawnArgs(['--print', '%(title)s|%(duration)s', '--no-warnings', videoUrl])
-          const meta = await spawnOutput(cmd, args, 8000)
+          const [mc, ...ma] = ytSpawnArgs(['--print', '%(title)s|%(duration)s', '--no-warnings', videoUrl])
+          const meta = await spawnOutput(mc, ma, 8000)
           const p = meta.trim().split('|')
           title = p[0] || 'Unknown'
           duration = parseInt(p[1]) || 0
         } catch {}
 
-        // Download via spawn async
-        const tmpFile = join(app.getPath('temp'), `nyurka_${idKey}_${Date.now()}.m4a`)
-        console.log('[yt-dlp] Downloading audio:', idKey)
-
-        const [dlCmd, ...dlArgs] = ytSpawnArgs(['-f', 'bestaudio[ext=m4a]/bestaudio', '-o', tmpFile, '--no-warnings', '--no-progress', videoUrl])
-        await spawnOutput(dlCmd, dlArgs, 180000)
-
-        if (!existsSync(tmpFile)) {
-          downloading.delete(idKey)
-          return { error: 'Download failed' }
-        }
-
-        const stat = statSync(tmpFile)
-        const contentType = 'audio/mp4'
-
-        const timer = setTimeout(() => cacheDelete(idKey), 120000)
-        cacheSet(idKey, { filePath: tmpFile, size: stat.size, contentType, timer })
-
-        const port = await serveFromFile(tmpFile, stat.size, contentType)
         downloading.delete(idKey)
-
-        return { streamUrl: `http://127.0.0.1:${port}/`, duration, title, videoId: idKey }
+        return { streamUrl: url, duration, title, videoId: idKey }
       } catch (err) {
         downloading.delete(idKey)
         throw err
@@ -344,17 +330,17 @@ export function registerYoutubeIPCs() {
     try {
       if (!ytAvailable) return false
       const videoId = extractId(videoUrl)
-      if (!videoId || streamCache.has(videoId) || downloading.has(videoId)) return true
+      if (!videoId || downloading.has(videoId)) return true
       downloading.add(videoId)
 
       const tmpFile = join(app.getPath('temp'), `nyurka_${videoId}_${Date.now()}.m4a`)
-      const proc = ytdlSpawn(['-f', 'bestaudio[ext=m4a]/bestaudio', '-o', tmpFile, '--no-warnings', videoUrl])
+      const [cmd, ...args] = ytSpawnArgs(['-f', 'bestaudio[ext=m4a]/bestaudio', '-o', tmpFile, '--no-warnings', videoUrl])
+      const proc = spawn(cmd, args)
       proc.on('exit', () => {
         if (existsSync(tmpFile)) {
           const stat = statSync(tmpFile)
           const timer = setTimeout(() => cacheDelete(videoId), 120000)
           cacheSet(videoId, { filePath: tmpFile, size: stat.size, contentType: 'audio/mp4', timer })
-          console.log('[yt-dlp] Preload selesai:', videoId)
         }
         downloading.delete(videoId)
       })

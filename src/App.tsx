@@ -18,7 +18,7 @@ import LyricsView from './components/LyricsView'
 export default function App() {
   const { theme, loadTheme } = useThemeStore()
   const { page, showSplash, setShowSplash, sidebarWidth, setSidebarWidth } = useAppStore()
-  const { currentTrack, savePlayback, loadPlayback } = usePlayerStore()
+  const { currentTrack, savePlayback } = usePlayerStore()
   const loadedRef = useRef(false)
 
   // Initialize audio player hooks
@@ -28,11 +28,8 @@ export default function App() {
     loadTheme()
     checkLoginStatus()
 
-    // Load playback state from last session
     if (!loadedRef.current) {
       loadedRef.current = true
-      loadPlayback()
-      // Load saved sidebar width
       window.electronAPI?.storeGet?.('sidebarWidth').then((w: number) => {
         if (w && w >= 48 && w <= 220) setSidebarWidth(w)
       })

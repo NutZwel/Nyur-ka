@@ -31,6 +31,7 @@ interface PlayerState {
   setSearchResults: (results: Track[]) => void
   setIsSearching: (val: boolean) => void
   playTrackNext: (track: Track) => void
+  jumpToQueue: (index: number) => void
   loadRecommendations: () => Promise<void>
   importPlaylist: (url: string) => Promise<{ success: boolean; count: number; message: string }>
   savePlayback: () => Promise<void>
@@ -213,6 +214,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const newQueue = [...state.queue]
     newQueue.splice(insertAt, 0, item)
     set({ queue: newQueue })
+  },
+
+  jumpToQueue: (index: number) => {
+    const state = get()
+    if (index < 0 || index >= state.queue.length) return
+    const item = state.queue[index]
+    if (!item) return
+    set({ queueIndex: index, currentTrack: item.track, progress: 0 })
+    preloadTrack(item.track)
   },
 
   loadRecommendations: async () => {

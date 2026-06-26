@@ -12,41 +12,38 @@ export interface LyricsData {
   source: 'lrclib' | 'none'
 }
 
-// Cache in memory biar gak fetch ulang
 const lyricsCache = new Map<string, LyricsData>()
 
 export function useLyrics() {
-  const { currentTrack, progress } = usePlayerStore()
+  const { currentTrack } = usePlayerStore()
   const [lyrics, setLyrics] = useState<LyricsData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [activeLine, setActiveLine] = useState(-1)
-  const currentTrackRef = useRef<string | null>(null)
+  const trackRef = useRef<string | null>(null)
   const fetchingRef = useRef(false)
+  const linesRef = useRef<LyricLine[]>([])
 
+  // Fetch lyrics when track changes
   useEffect(() => {
     if (!currentTrack) {
-      setLyrics(null)
-      setActiveLine(-1)
-      currentTrackRef.current = null
+      setLyrics(null); setActiveLine(-1)
+      linesRef.current = []; trackRef.current = null
       return
     }
 
-    const trackId = currentTrack.id
-    if (trackId === currentTrackRef.current) return
-    currentTrackRef.current = trackId
+    const id = currentTrack.id
+    if (id === trackRef.current) return
+    trackRef.current = id
 
-    // Cek cache dulu
-    const cached = lyricsCache.get(trackId)
+    const cached = lyricsCache.get(id)
     if (cached) {
-      setLyrics(cached)
-      setIsLoading(false)
-      setActiveLine(-1)
+      setLyrics(cached); linesRef.current = cached.syncedLyrics
+      setIsLoading(false); setActiveLine(-1)
       return
     }
 
-    setIsLoading(true)
-    setLyrics(null)
-    setActiveLine(-1)
+    setIsLoading(true); setLyrics(null)
+    linesRef.current = []; setActiveLine(-1)
 
     const doFetch = async () => {
       if (fetchingRef.current) return
@@ -56,102 +53,67 @@ export function useLyrics() {
         const artist = encodeURIComponent(currentTrack.artist)
         const title = encodeURIComponent(currentTrack.title)
 
-        // Coba fetch via main process (biar gak kena CSP blokade di file://)
-        const fetchLyrics = async (url: string) => {
-          if (window.electronAPI?.fetchLyrics) {
-            return await window.electronAPI.fetchLyrics(url)
-          }
-          // Fallback: fetch langsung (buat development)
+        const fetchFrom = async (url: string) => {
+          if (window.electronAPI?.fetchLyrics) return await window.electronAPI.fetchLyrics(url)
           const res = await fetch(url)
           if (!res.ok) return { error: `HTTP ${res.status}`, status: res.status }
-          const data = await res.json()
-          return { data, status: res.status }
+          return { data: await res.json(), status: res.status }
         }
 
-        let result = await fetchLyrics(
-          `https://lrclib.net/api/get?artist_name=${artist}&track_name=${title}`
-        )
+        let result = await fetchFrom(`https://lrclib.net/api/get?artist_name=${artist}&track_name=${title}`)
 
-        // Fallback: search
         if (result.error || result.status !== 200) {
           const q = encodeURIComponent(`${currentTrack.title} ${currentTrack.artist}`)
-          result = await fetchLyrics(`https://lrclib.net/api/search?q=${q}`)
+          result = await fetchFrom(`https://lrclib.net/api/search?q=${q}`)
           if (result.error || result.status !== 200) throw new Error('Not found')
-
-          const results = result.data
-          const match = Array.isArray(results) ? results[0] : null
-          if (!match || (!match.syncedLyrics && !match.plainLyrics)) throw new Error('No lyrics')
-
-          const data: LyricsData = {
-            plainLyrics: match.plainLyrics || '',
-            syncedLyrics: parseSync(match.syncedLyrics || ''),
-            source: 'lrclib',
-          }
-          lyricsCache.set(trackId, data)
-          setLyrics(data)
-          setIsLoading(false)
-          fetchingRef.current = false
-          return
+          const m = Array.isArray(result.data) ? result.data[0] : null
+          if (!m || (!m.syncedLyrics && !m.plainLyrics)) throw new Error('No lyrics')
+          const d = { plainLyrics: m.plainLyrics || '', syncedLyrics: parseSync(m.syncedLyrics || ''), source: 'lrclib' as const }
+          lyricsCache.set(id, d); linesRef.current = d.syncedLyrics; setLyrics(d)
+          setIsLoading(false); fetchingRef.current = false; return
         }
 
-        const json = result.data
-        const data: LyricsData = {
-          plainLyrics: json.plainLyrics || '',
-          syncedLyrics: parseSync(json.syncedLyrics || ''),
-          source: 'lrclib',
-        }
-        lyricsCache.set(trackId, data)
-        setLyrics(data)
-      } catch {
-        setLyrics({ plainLyrics: '', syncedLyrics: [], source: 'none' })
-      }
-      setIsLoading(false)
-      fetchingRef.current = false
+        const d = { plainLyrics: result.data.plainLyrics || '', syncedLyrics: parseSync(result.data.syncedLyrics || ''), source: 'lrclib' as const }
+        lyricsCache.set(id, d); linesRef.current = d.syncedLyrics; setLyrics(d)
+      } catch { setLyrics({ plainLyrics: '', syncedLyrics: [], source: 'none' }); linesRef.current = [] }
+      setIsLoading(false); fetchingRef.current = false
     }
-
     doFetch()
   }, [currentTrack])
 
-  // Sync dengan progress untuk lirik
+  // ─── Subscribe progress pake interval KECIL (setiap 500ms) bukan tiap progress ───
   useEffect(() => {
-    if (!lyrics?.syncedLyrics?.length) {
-      setActiveLine(-1)
-      return
+    const lines = linesRef.current
+    if (!lines.length) { setActiveLine(-1); return }
+
+    const idxRef = { current: -1 }
+    const tick = () => {
+      const p = usePlayerStore.getState().progress
+      let idx = -1
+      for (let i = lines.length - 1; i >= 0; i--) { if (p >= lines[i].time) { idx = i; break } }
+      if (idx !== idxRef.current) { idxRef.current = idx; setActiveLine(idx) }
     }
 
-    const lines = lyrics.syncedLyrics
-    let idx = -1
-    for (let i = lines.length - 1; i >= 0; i--) {
-      if (progress >= lines[i].time) {
-        idx = i
-        break
-      }
-    }
-    setActiveLine(idx)
-  }, [progress, lyrics])
+    tick()
+    const id = setInterval(tick, 500)
+    return () => clearInterval(id)
+  }, [lyrics])
 
-  // Reset activeLine ketika lagu berganti
-  useEffect(() => {
-    setActiveLine(-1)
-  }, [currentTrack?.id])
+  // Reset activeLine on track change
+  useEffect(() => { setActiveLine(-1) }, [currentTrack?.id])
 
   return { lyrics, isLoading, activeLine }
 }
 
 function parseSync(raw: string): LyricLine[] {
   if (!raw) return []
-  const lines: LyricLine[] = []
-  const regex = /\[(\d{1,3}):(\d{2})\.(\d{2,3})\](.*)/g
-  let match
-  while ((match = regex.exec(raw)) !== null) {
-    const mins = parseInt(match[1])
-    const secs = parseInt(match[2])
-    const ms = parseInt(match[3].padEnd(3, '0'))
-    const text = match[4]?.trim()
-    if (text) {
-      lines.push({ time: mins * 60 + secs + ms / 1000, text })
-    }
+  const l: LyricLine[] = []
+  const r = /\[(\d{1,3}):(\d{2})\.(\d{2,3})\](.*)/g
+  let m
+  while ((m = r.exec(raw)) !== null) {
+    const t = m[4]?.trim()
+    if (t) l.push({ time: parseInt(m[1]) * 60 + parseInt(m[2]) + parseInt(m[3].padEnd(3, '0')) / 1000, text: t })
   }
-  lines.sort((a, b) => a.time - b.time)
-  return lines
+  l.sort((a, b) => a.time - b.time)
+  return l
 }

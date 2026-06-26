@@ -4,7 +4,7 @@ import { usePlayerStore } from '../store/playerStore'
 
 export default function QueueView() {
   const { theme } = useThemeStore()
-  const { queue, queueIndex, currentTrack, removeFromQueue, clearQueue, toggleShuffle, shuffle } = usePlayerStore()
+  const { queue, queueIndex, currentTrack, removeFromQueue, clearQueue, toggleShuffle, shuffle, jumpToQueue } = usePlayerStore()
 
   if (queue.length === 0) {
     return (
@@ -59,8 +59,9 @@ export default function QueueView() {
       <div className="flex-1 overflow-y-auto space-y-1">
         {queue.map((item, idx) => (
           <div key={`${item.track.id}-${idx}`}
-            className="flex items-center gap-2 p-2 rounded-xl transition-all group"
-            style={{ background: idx === queueIndex ? `${theme.primary}08` : 'transparent' }}>
+            className="flex items-center gap-2 p-2 rounded-xl transition-all group cursor-pointer"
+            style={{ background: idx === queueIndex ? `${theme.primary}08` : 'transparent' }}
+            onClick={() => { if (idx !== queueIndex) jumpToQueue(idx) }}>
             <div className="w-4 text-center text-[10px] shrink-0" style={{ color: idx === queueIndex ? theme.primary : theme.textSecondary }}>
               {idx === queueIndex ? (
                 <div className="flex gap-[2px] items-center justify-center">

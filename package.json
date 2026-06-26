@@ -48,7 +48,7 @@
       "artifactName": "Nyurka-${version}-portable.exe"
     },
     "nsis": {
-      "artifactName": "Nyurka-${version}-setup.exe",
+      "artifactName": "Nyurka-v${version}.exe",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }
