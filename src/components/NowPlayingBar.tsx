@@ -1,10 +1,10 @@
-import { Play, Pause, SkipForward, SkipBack, Volume2, ListMusic, Disc3 } from 'lucide-react'
+import { Play, Pause, SkipForward, SkipBack, Volume2, ListMusic, Disc3, Repeat, Repeat1 } from 'lucide-react'
 import { useThemeStore } from '../store/themeStore'
 import { usePlayerStore } from '../store/playerStore'
 
 export default function NowPlayingBar() {
   const { theme } = useThemeStore()
-  const { currentTrack, isPlaying, progress, duration, volume, togglePlay, nextTrack, prevTrack, setVolume } = usePlayerStore()
+  const { currentTrack, isPlaying, progress, duration, volume, loopMode, togglePlay, nextTrack, prevTrack, setVolume, setLoopMode } = usePlayerStore()
 
   if (!currentTrack) return null
 
@@ -56,6 +56,13 @@ export default function NowPlayingBar() {
           {isPlaying ? <Pause size={13} fill="#fff" /> : <Play size={13} fill="#fff" />}
         </button>
         <button className="btn-icon !w-7 !h-7" onClick={() => nextTrack()}><SkipForward size={13} /></button>
+        <button className="btn-icon !w-7 !h-7" onClick={() => {
+          const modes: ('none' | 'all' | 'one')[] = ['none', 'all', 'one']
+          const idx = modes.indexOf(loopMode)
+          setLoopMode(modes[(idx + 1) % modes.length])
+        }} style={{ color: loopMode !== 'none' ? theme.accent : theme.textSecondary }}>
+          {loopMode === 'one' ? <Repeat1 size={11} /> : <Repeat size={11} />}
+        </button>
       </div>
 
       {/* Volume */}

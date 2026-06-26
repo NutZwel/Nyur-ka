@@ -16,14 +16,11 @@ export function useAudioPlayer() {
   const stopAudio = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
-    // Hapus semua listener dulu biar gak trigger error saat src di-clear
     cleanupRef.current?.()
     cleanupRef.current = null
     audio.pause()
-    // Clear src biar audio beneran stop & lepas resource
     audio.src = ''
     audio.load()
-    // Matiin juga server HTTP
     window.electronAPI?.youtubeStopStream()
   }, [])
 
@@ -31,7 +28,6 @@ export function useAudioPlayer() {
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio()
-      // Biar gak nahan resource ketika user ganti lagu
       audioRef.current.preload = 'none'
     }
     return () => {
@@ -48,19 +44,15 @@ export function useAudioPlayer() {
     const audio = audioRef.current
     if (!audio) return
 
-    // Jika currentTrack null → stop total
     if (!currentTrack) {
       stopAudio()
       currentTrackIdRef.current = null
       return
     }
 
-    // Sama kaya sebelumnya, skip
     if (currentTrack.id === currentTrackIdRef.current) return
     currentTrackIdRef.current = currentTrack.id
 
-    // ⚡ STOP DULU sebelum mulai yang baru
-    // Ini kunci fix — paksa audio berhenti SEKARANG juga, syncronous
     stopAudio()
 
     let cancelled = false
@@ -69,7 +61,6 @@ export function useAudioPlayer() {
       loadingRef.current = true
 
       try {
-        // Cari YouTube URL kalau belum ada
         let ytUrl = currentTrack.youtubeUrl
         let ytId = currentTrack.youtubeId
         if (!ytUrl && ytId) {
@@ -89,8 +80,19 @@ export function useAudioPlayer() {
         const result = await window.electronAPI?.youtubeGetStream(ytUrl)
         if (!result || result.error || !result.streamUrl || cancelled) {
           console.error('Stream error:', result?.error || 'No URL')
+          // Auto-skip kalo stream error
+          const trackTitle = currentTrack.title
           setPlaying(false)
           loadingRef.current = false
+          // Skip ke next track setelah error
+          setTimeout(() => {
+            usePlayerStore.getState().nextTrack()
+            // Notifikasi error
+            try {
+              window.electronAPI?.showNotification?.('Playback Error',
+                `Could not play "${trackTitle}". Skipping to next track.`)
+            } catch {}
+          }, 300)
           return
         }
 
@@ -120,6 +122,23 @@ export function useAudioPlayer() {
           console.error('Audio error:', audio.error?.code)
           setPlaying(false)
           loadingRef.current = false
+          // Auto-skip on audio error
+          const loop = usePlayerStore.getState().loopMode
+          if (loop !== 'one') {
+            setTimeout(() => {
+              usePlayerStore.getState().nextTrack()
+              try {
+                window.electronAPI?.showNotification?.('Playback Error',
+                  'Audio error. Skipping to next track.')
+              } catch {}
+            }, 300)
+          }
+        }
+        const onStalled = () => {
+          // Stalled — coba recover
+          if (usePlayerStore.getState().isPlaying) {
+            audio.play().catch(() => {})
+          }
         }
 
         audio.addEventListener('canplay', onCanPlay)
@@ -127,6 +146,8 @@ export function useAudioPlayer() {
         audio.addEventListener('timeupdate', onTimeUpdate)
         audio.addEventListener('ended', onEnded)
         audio.addEventListener('error', onError)
+        audio.addEventListener('stalled', onStalled)
+        audio.addEventListener('suspend', onStalled)
 
         cleanupRef.current = () => {
           audio.removeEventListener('canplay', onCanPlay)
@@ -134,11 +155,12 @@ export function useAudioPlayer() {
           audio.removeEventListener('timeupdate', onTimeUpdate)
           audio.removeEventListener('ended', onEnded)
           audio.removeEventListener('error', onError)
+          audio.removeEventListener('stalled', onStalled)
+          audio.removeEventListener('suspend', onStalled)
         }
 
-        // Tunggu bisa play dulu
         try {
-          audio.play()
+          await audio.play()
           setPlaying(true)
         } catch {
           setPlaying(false)
@@ -148,6 +170,14 @@ export function useAudioPlayer() {
       } catch {
         setPlaying(false)
         loadingRef.current = false
+        // Auto-skip on general error
+        setTimeout(() => {
+          usePlayerStore.getState().nextTrack()
+          try {
+            window.electronAPI?.showNotification?.('Playback Error',
+              'Unable to play this track. Skipping.')
+          } catch {}
+        }, 300)
       }
     }
 

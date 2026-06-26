@@ -1,13 +1,15 @@
 import {
   Play, Pause, SkipForward, SkipBack,
   Shuffle, Repeat, Repeat1, Music, Disc3,
-  Volume2, Volume1, VolumeX, Search
+  Volume2, Volume1, VolumeX, Search, Maximize2
 } from 'lucide-react'
 import { useThemeStore } from '../store/themeStore'
 import { usePlayerStore } from '../store/playerStore'
 import { useAppStore } from '../store/appStore'
+import { useState } from 'react'
 import DancingRobot from './DancingRobot'
 import PixelMascot from './PixelMascot'
+import FullscreenPlayer from './FullscreenPlayer'
 
 function invertHex(hex: string): string {
   const c = hex.replace('#', '')
@@ -25,6 +27,7 @@ export default function PlayerView() {
     setProgress, setLoopMode, toggleShuffle, nextTrack, prevTrack,
   } = usePlayerStore()
   const { setPage, setSearchQuery } = useAppStore()
+  const [showFullscreen, setShowFullscreen] = useState(false)
 
   const fmt = (s: number) => {
     if (!s || isNaN(s)) return '0:00'
@@ -34,7 +37,9 @@ export default function PlayerView() {
   const progressPct = duration > 0 ? (progress / duration) * 100 : 0
 
   return (
-    <div className="flex flex-col items-center justify-center h-full px-4 animate-fadeIn" style={{ gap: 20 }}>
+    <>
+      {showFullscreen && <FullscreenPlayer onClose={() => setShowFullscreen(false)} />}
+      <div className="flex flex-col items-center justify-center h-full px-4 animate-fadeIn" style={{ gap: 20 }}>
       {currentTrack ? (
         <>
           {/* Album Art */}
@@ -195,7 +200,7 @@ export default function PlayerView() {
               <SkipForward size={20} />
             </button>
             <button className="btn-icon relative" onClick={() => {
-              const modes: ('none' | 'one' | 'all')[] = ['none', 'all', 'one']
+              const modes: ('none' | 'all' | 'one')[] = ['none', 'all', 'one']
               const idx = modes.indexOf(loopMode)
               setLoopMode(modes[(idx + 1) % modes.length])
             }} style={{ color: loopMode !== 'none' ? theme.accent : theme.textSecondary }}>
@@ -219,6 +224,12 @@ export default function PlayerView() {
               }}
             />
           </div>
+
+          {/* Fullscreen toggle */}
+          <button className="btn-icon" onClick={() => setShowFullscreen(true)}
+            style={{ color: theme.textSecondary }} title="Fullscreen">
+            <Maximize2 size={14} />
+          </button>
         </>
       ) : (
         <div className="flex flex-col items-center justify-center h-full animate-fadeIn" style={{ gap: 16 }}>
@@ -255,6 +266,7 @@ export default function PlayerView() {
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
